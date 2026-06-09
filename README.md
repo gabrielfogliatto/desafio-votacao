@@ -115,3 +115,122 @@ A tela do tipo SELECAO exibe uma lista de opções para que o usuário.
 O aplicativo envia uma requisição POST para a url informada e com o body definido pelo objeto dentro de cada item da lista de seleção, quando o mesmo é acionado, semelhando ao funcionamento dos botões da tela FORMULARIO.
 
 # desafio-votacao
+
+
+
+# Votação API
+
+API REST em Java/Spring Boot para cadastrar pautas, abrir sessões de votação, receber votos de associados e contabilizar resultados.
+
+## Stack
+
+- Java 21
+- Spring Boot 3
+- Apache Maven 3.9
+- Spring Web, Validation e Data JPA
+- H2 persistido em arquivo por padrao
+- OpenAPI/Swagger UI
+
+## Como executar
+
+Com H2 local persistido em `./data`:
+
+```bash
+mvn spring-boot:run
+```
+
+A API fica em `http://localhost:8080`.
+
+Swagger UI:
+
+```text
+http://localhost:8080/swagger-ui.html
+```
+
+Banco H2:
+
+```text
+http://localhost:8080/h2-console
+
+
+JDBC URL: jdbc:h2:file:./data/votacao-db
+User Name: sa
+Password:
+```
+
+
+## Testes
+
+```bash
+mvn test
+```
+
+## Endpoints
+
+### Criar pauta
+
+```http
+POST /api/v1/agendas
+Content-Type: application/json
+
+{
+  "title": "Compra de equipamentos",
+  "description": "Aprovar verba para novos equipamentos."
+}
+```
+
+### Listar pautas
+
+```http
+GET /api/v1/agendas
+```
+
+### Abrir sessão de votação
+
+Se `durationSeconds` nãoo for informado, a sessão fica aberta por 1 minuto.
+
+```http
+POST /api/v1/agendas/{agendaId}/sessions
+Content-Type: application/json
+
+{
+  "durationSeconds": 120
+}
+```
+
+### Votar
+
+Cada associado pode votar apenas uma vez por pauta. O voto deve ser `SIM` ou `NAO`.
+
+```http
+POST /api/v1/agendas/{agendaId}/votes
+Content-Type: application/json
+
+{
+  "associateId": "assoc-123",
+  "cpf": "39053344705",
+  "vote": "SIM"
+}
+```
+
+### Resultado
+
+```http
+GET /api/v1/agendas/{agendaId}/result
+```
+
+### Facade fake de CPF
+
+```http
+GET /api/v1/cpf/{cpf}
+```
+
+Retorna `200` com `ABLE_TO_VOTE` ou `UNABLE_TO_VOTE` quando o CPF é considerado válido pelo fake client. Retorna `404` quando o CPF é considerado inválido. No endpoint de voto, apenas `ABLE_TO_VOTE` permite registrar o voto.
+
+## Decisões técnicas
+
+- A API foi versionada por URI (`/api/v1`) por ser simples de consumir em aplicativos mobile e facil de evoluir mantendo compatibilidade.
+- A sessão de votação e única por pauta. Depois de aberta, o status e calculado por horario (`openedAt` e `closesAt`), evitando jobs de fechamento.
+- A regra de voto único e protegida em duas camadas: validação de servico e constraint única no banco (`agenda_id`, `associate_id`), o que evita duplicidade mesmo com requisições concorrentes.
+- A apuração usa `count` agrupado no banco, sem carregar todos os votos em memoria, pensando em cenários com muitos votos.
+- O H2 usa arquivo local por padrão para preservar dados após restart da aplicação sem exigir dependência externa.
