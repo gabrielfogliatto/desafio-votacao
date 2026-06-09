@@ -143,6 +143,8 @@ A API fica em `http://localhost:8080`.
 
 Swagger UI:
 
+Você consegue testar a api com o swagger clicando em "try it out" no endpoint que escolher, caso seja um endpoint de requisição POST, lembre de preencher os parâmetros necessários e as informações no body da requisição caso tenha
+
 ```text
 http://localhost:8080/swagger-ui.html
 ```
